@@ -1,5 +1,5 @@
 .page { display: grid; gap: 16px; }
-.header { display: flex; align-items: center; justify-content: space-between; }
+.header { display: flex; align-items: center; gap: 30px; }
 .title { margin: 0; font-size: 22px; }
 .grid2 { display: grid; grid-template-columns: 1fr 1.2fr; gap: 16px; }
 .card { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 16px; }

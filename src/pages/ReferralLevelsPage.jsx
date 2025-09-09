@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import s from "../assets/styles/Admin.module.css";
 import root from "../assets/styles/Root.module.css";
+import p from "../assets/styles/Percentages.module.css";
 
 export default function ReferralLevelsPage() {
   const { authFetch } = useAuth();
@@ -57,55 +58,53 @@ export default function ReferralLevelsPage() {
   return (
     <div className={s.page}>
       <div className={s.header}><h2 className={s.title}>Проценты</h2></div>
-      <div className={s.card}>
-        <h3 style={{ marginTop: 0 }}>Кэшбэк</h3>
-        {cashback ? (
-          <div className={s.formCompact} style={{ maxWidth: 520 }}>
-            <div className={s.field}><label>Включён</label>
-              <input type="checkbox" checked={!!cashback.enabled} onChange={e=>setCashback({ ...cashback, enabled: e.target.checked })} />
+
+      <div className={p.grid}>
+        <div className={p.card}>
+          <h3 className={p.cardTitle}>Кэшбэк</h3>
+          {cashback ? (
+            <div className={p.form}>
+              <div className={p.row}>
+                <div className={p.label}>Включён</div>
+                <input className={p.toggle} type="checkbox" checked={!!cashback.enabled} onChange={e=>setCashback({ ...cashback, enabled: e.target.checked })} />
+              </div>
+              <div className={p.row}>
+                <div className={p.label}>Процент</div>
+                <div className={p.inputWrap}>
+                  <input className={p.input} type="number" min={0} step={0.01} value={cashback.percent} onChange={e=>setCashback({ ...cashback, percent: e.target.value })} />
+                  <span className={p.suffix}>%</span>
+                </div>
+              </div>
+              <div className={p.actions}><button className={root.btnPrimary} onClick={saveCashback}>Сохранить</button></div>
             </div>
-            <div className={s.field}><label>Процент, %</label>
-              <input type="number" value={cashback.percent} onChange={e=>setCashback({ ...cashback, percent: e.target.value })} />
+          ) : (
+            <div className={p.hint}>Нет настроек</div>
+          )}
+        </div>
+
+        <div className={p.card}>
+          <h3 className={p.cardTitle}>Реферальные уровни</h3>
+          {loading ? (
+            <div>Загрузка…</div>
+          ) : (
+            <div className={p.levels}>
+              {items.map(row => (
+                <div key={row.id} className={p.levelRow}>
+                  <div className={p.levelBadge}>L{row.level}</div>
+                  <div className={p.inputWrap}>
+                    <input className={p.input} type="number" min={0} step={0.01} value={row.percent}
+                           onChange={e=>setPercent(row.id, e.target.value)} />
+                    <span className={p.suffix}>%</span>
+                  </div>
+                  <button className={root.btnPrimary} disabled={saving} onClick={()=>saveRow(row)}>Сохранить</button>
+                </div>
+              ))}
             </div>
-            <div className={s.actions}><button className={root.btnPrimary} onClick={saveCashback}>Сохранить</button></div>
+          )}
+          <div className={p.notice}>
+            {error && <div className={p.err}>{error}</div>}
+            {ok && <div className={p.ok}>{ok}</div>}
           </div>
-        ) : (
-          <div>Нет настроек</div>
-        )}
-      </div>
-      <div className={s.card}>
-        {loading ? (
-          <div>Загрузка...</div>
-        ) : (
-          <div className={s.tableWrap}>
-            <table className={s.table}>
-              <thead>
-                <tr>
-                  <th>Уровень</th>
-                  <th>Процент, %</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.map(row => (
-                  <tr key={row.id}>
-                    <td>L{row.level}</td>
-                    <td>
-                      <input type="number" min={0} step={0.01} value={row.percent}
-                             onChange={e=>setPercent(row.id, e.target.value)} />
-                    </td>
-                    <td>
-                      <button className={root.btnPrimary} disabled={saving} onClick={()=>saveRow(row)}>Сохранить</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-        <div className={s.actions}>
-          {error && <div style={{ color: "red" }}>{error}</div>}
-          {ok && <div style={{ color: "green" }}>{ok}</div>}
         </div>
       </div>
     </div>

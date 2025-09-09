@@ -1,7 +1,10 @@
 :root {
-   --bg: #faf9f8;
-   --fg: #2f2f2f;
-   --line: #eee;
+   --bg: #FAFAF8;
+   --fg: #21211F;
+   --line: #ECEBE6;
+   --primary: #64acff;
+   --primary-700: #4d9fff;
+   --accent-green: #daff7c;
 }
 
 .app {
@@ -48,5 +51,5 @@
 }
 .btn:hover { background: #f0f0f0; }
 
-.btnPrimary { background: #111; color: #fff; border: 1px solid #111; border-radius: 8px; padding: 8px 14px; }
-.btnPrimary:hover { background: #333; }
+.btnPrimary { background: var(--primary); color: #fff; border: 1px solid var(--primary); border-radius: 8px; padding: 8px 14px; text-decoration: none; }
+.btnPrimary:hover { background: var(--primary-700); }

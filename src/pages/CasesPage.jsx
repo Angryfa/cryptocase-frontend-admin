@@ -33,16 +33,7 @@ export default function CasesPage() {
 	const [loading, setLoading] = useState(true);
 	const [types, setTypes] = useState([]);
 
-	// форма
-	const [name, setName] = useState("");
-	const [price, setPrice] = useState(0);
-	const [typeId, setTypeId] = useState("");
-	const [availableFrom, setAvailableFrom] = useState("");
-	const [availableTo, setAvailableTo] = useState("");
-	const [spinsTotal, setSpinsTotal] = useState(0);
-	const [prizes, setPrizes] = useState([]);
 	const [error, setError] = useState("");
-	const [ok, setOk] = useState("");
 
 	useEffect(() => {
 		let mounted = true;
@@ -58,75 +49,16 @@ export default function CasesPage() {
 		return () => { mounted = false; };
 	}, [authFetch]);
 
-	const addPrize = () => setPrizes(p => [...p, { title: "", amount_usd: 0, weight: 1 }]);
-	const setPrize = (idx, v) => setPrizes(p => p.map((x,i)=> i===idx? v : x));
-	const removePrize = (idx) => setPrizes(p => p.filter((_,i)=> i!==idx));
-
-	const onSubmit = async (e) => {
-		e.preventDefault();
-		setError(""); setOk("");
-		try {
-			const toIsoOrNull = (v) => v ? new Date(v).toISOString() : null;
-			const payload = {
-				name,
-				price_usd: Number(price),
-				is_active: true,
-				type_id: Number(typeId),
-				available_from: toIsoOrNull(availableFrom),
-				available_to: toIsoOrNull(availableTo),
-				spins_total: Number(spinsTotal),
-				prizes: prizes.map(p => ({ title: p.title, amount_usd: Number(p.amount_usd), weight: Number(p.weight||1) })),
-			};
-			const res = await authFetch("/api/admin/cases/", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(payload),
-			});
-			if (!res.ok) {
-				const err = await res.json().catch(()=>({detail:"Ошибка"}));
-				throw new Error(err.detail || JSON.stringify(err));
-			}
-			const created = await res.json();
-			setItems(i => [created, ...i]);
-			setOk("Кейс создан");
-			setName(""); setPrice(0); setTypeId(""); setAvailableFrom(""); setAvailableTo(""); setSpinsTotal(0); setPrizes([]);
-		} catch (err) { setError(err.message || "Ошибка"); }
-	};
+	// создание вынесено на отдельную страницу
 
 	if (loading) return <div>Загрузка...</div>;
 
 	return (
 		<div className={s.page}>
-			<div className={s.header}><h2 className={s.title}>Кейсы</h2></div>
-			<div className={`${s.card} ${s.cardNarrow}`}>
-				<h3 style={{ marginTop: 0 }}>Создать кейс</h3>
-				<form onSubmit={onSubmit} className={s.formCompact}>
-					<div className={s.cols2}>
-						<div className={s.field}><label>Название</label><input value={name} onChange={e=>setName(e.target.value)} /></div>
-						<div className={s.field}><label>Цена, $</label><input type="number" value={price} onChange={e=>setPrice(e.target.value)} /></div>
-						<div className={s.field}><label>Тип кейса</label>
-							<select value={typeId} onChange={e=>setTypeId(e.target.value)}>
-								<option value="">Выберите тип</option>
-								{types.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-							</select>
-						</div>
-						<div className={s.field}><label>Открыт с</label><input type="datetime-local" value={availableFrom} onChange={e=>setAvailableFrom(e.target.value)} /></div>
-						<div className={s.field}><label>Открыт до</label><input type="datetime-local" value={availableTo} onChange={e=>setAvailableTo(e.target.value)} /></div>
-						<div className={s.field}><label>Лимит круток</label><input type="number" value={spinsTotal} onChange={e=>setSpinsTotal(e.target.value)} /></div>
-					</div>
-					<div className={s.field}>
-						<label>Призы</label>
-						{prizes.map((p,idx)=> (
-							<PrizeRow key={idx} idx={idx} value={p} onChange={setPrize} onRemove={removePrize} />
-						))}
-						<button type="button" className={root.btn} onClick={addPrize}>Добавить приз</button>
-					</div>
-					<div className={s.actions}>
-						<button type="submit" className={root.btnPrimary}>Создать</button>
-						{error && <div style={{ color: "red" }}>{error}</div>}
-						{ok && <div style={{ color: "green" }}>{ok}</div>}
-					</div>
-				</form>
+			
+			<div className={s.header}>
+				<h2 className={s.title}>Кейсы</h2>
+				<Link className={root.btnPrimary} to="/cases/create">Создать кейс</Link>
 			</div>
 
 			<div className={s.card}>

@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useLocation, useNavigate } from "react-router-dom";
+import s from "../assets/styles/Auth.module.css";
+import root from "../assets/styles/Root.module.css";
 
 export default function LoginPage() {
 	const { login } = useAuth();
@@ -20,14 +22,24 @@ export default function LoginPage() {
 	};
 
 	return (
-		<div style={{ maxWidth: 360, margin: "40px auto" }}>
-			<h2>Админ вход</h2>
-			<form onSubmit={onSubmit}>
-				<input placeholder="Email" value={email} onChange={e=>setEmail(e.target.value)} style={{ width: "100%", marginBottom: 8 }} />
-				<input placeholder="Пароль" type="password" value={password} onChange={e=>setPassword(e.target.value)} style={{ width: "100%", marginBottom: 8 }} />
-				<button type="submit">Войти</button>
-				{error && <div style={{ color: "red", marginTop: 8 }}>{error}</div>}
-			</form>
+		<div className={s.root}>
+			<div className={s.card}>
+				<h2 className={s.title}>Вход в админку</h2>
+				<form className={s.form} onSubmit={onSubmit}>
+					<div className={s.field}>
+						<label>Email</label>
+						<input className={s.input} placeholder="Email" value={email} onChange={e=>setEmail(e.target.value)} />
+					</div>
+					<div className={s.field}>
+						<label>Пароль</label>
+						<input className={s.input} placeholder="Пароль" type="password" value={password} onChange={e=>setPassword(e.target.value)} />
+					</div>
+					<div className={s.actions}>
+						<button className={root.btnPrimary} type="submit">Войти</button>
+						{error && <div className={s.error}>{error}</div>}
+					</div>
+				</form>
+			</div>
 		</div>
 	);
 }

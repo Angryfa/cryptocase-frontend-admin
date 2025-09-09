@@ -52,7 +52,7 @@ export default function CaseEditPage() {
       let mounted = true;
       (async () => {
          const [resCase, resTypes] = await Promise.all([
-            authFetch(`/api/cases/${id}/`),
+            authFetch(`/api/admin/cases/${id}/`),
             authFetch(`/api/cases/types/`),
          ]);
          const dataCase = await resCase.json();
@@ -62,7 +62,7 @@ export default function CaseEditPage() {
          setTypes(dataTypes);
          setName(dataCase.name);
          setPrice(dataCase.price_usd);
-         setTypeId(dataCase.type?.id || "");
+         setTypeId(dataCase.type?.id ? String(dataCase.type.id) : (dataCase.type_id != null ? String(dataCase.type_id) : ""));
          setAvailableFrom(isoToLocalInput(dataCase.available_from));
          setAvailableTo(isoToLocalInput(dataCase.available_to));
          setSpinsTotal(dataCase.spins_total || 0);

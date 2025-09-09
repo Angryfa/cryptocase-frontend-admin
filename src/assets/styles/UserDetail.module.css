@@ -1,0 +1,9 @@
+.finRow { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.finCard { background: #f6faff; border: 1px solid #dbeafe; border-radius: 12px; padding: 14px; }
+.finLabel { font-size: 12px; color: #667085; margin-bottom: 6px; }
+.finValue { font-size: 18px; font-weight: 800; color: var(--fg); }
+
+@media (max-width: 900px) {
+  .finRow { grid-template-columns: repeat(2, 1fr); }
+}
+
