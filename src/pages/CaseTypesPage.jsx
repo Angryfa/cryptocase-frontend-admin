@@ -28,12 +28,12 @@ export default function CaseTypesPage() {
 	return (
 		<div className={s.page}>
 			<div className={s.header}>
-				<h2 className={s.title}>Типы кейсов</h2>
-				<Link className={root.btnPrimary} to="/case-types/create">Создать тип</Link>
+				<h2 className={s.title}>Виды кейсов</h2>
+				<Link className={root.btnPrimary} to="/case-types/create">Создать вид</Link>
 			</div>
 
 			<div className={s.card}>
-				<h3 style={{ marginTop: 0 }}>Список типов</h3>
+				<h3 style={{ marginTop: 0 }}>Список</h3>
 				{error && <div style={{ color: "red" }}>{error}</div>}
 				<div className={s.tableWrap}>
 					<table className={s.table}>
