@@ -15,33 +15,34 @@ import TicketAdminPage from "./pages/TicketAdminPage";
 import ReferralLevelsPage from "./pages/ReferralLevelsPage";
 import LayoutSidebar from "./layouts/LayoutSidebar";
 import root from "./assets/styles/Root.module.css";
+import DashboardPage from "./pages/DashboardPage";
 
 function App() {
-  return (
-    <div className={root.app}>
-      <AuthProvider>
-        <Router>
-          <Routes>
-            <Route path="/login" element={<LoginPage />} />
-            <Route element={<LayoutSidebar />}> 
-              <Route path="/users" element={<RequireAdmin><UsersPage /></RequireAdmin>} />
-              <Route path="/users/:id" element={<RequireAdmin><UserDetailPage /></RequireAdmin>} />
-              <Route path="/cases" element={<RequireAdmin><CasesPage /></RequireAdmin>} />
-              <Route path="/cases/create" element={<RequireAdmin><CaseCreatePage /></RequireAdmin>} />
-              <Route path="/cases/:id" element={<RequireAdmin><CaseEditPage /></RequireAdmin>} />
-              <Route path="/case-types" element={<RequireAdmin><CaseTypesPage /></RequireAdmin>} />
-              <Route path="/case-types/create" element={<RequireAdmin><CaseTypeCreatePage /></RequireAdmin>} />
-              <Route path="/case-types/:id" element={<RequireAdmin><CaseTypeEditPage /></RequireAdmin>} />
-              <Route path="/tickets" element={<RequireAdmin><TicketsListPage /></RequireAdmin>} />
-              <Route path="/tickets/:id" element={<RequireAdmin><TicketAdminPage /></RequireAdmin>} />
-              <Route path="/ref-levels" element={<RequireAdmin><ReferralLevelsPage /></RequireAdmin>} />
-              <Route path="/" element={<div className={root.container}>Добро пожаловать в админку</div>} />
-            </Route>
-          </Routes>
-        </Router>
-      </AuthProvider>
-    </div>
-  );
+   return (
+      <div className={root.app}>
+         <AuthProvider>
+            <Router>
+               <Routes>
+                  <Route path="/login" element={<LoginPage />} />
+                  <Route element={<LayoutSidebar />}>
+                     <Route path="/users" element={<RequireAdmin><UsersPage /></RequireAdmin>} />
+                     <Route path="/users/:id" element={<RequireAdmin><UserDetailPage /></RequireAdmin>} />
+                     <Route path="/cases" element={<RequireAdmin><CasesPage /></RequireAdmin>} />
+                     <Route path="/cases/create" element={<RequireAdmin><CaseCreatePage /></RequireAdmin>} />
+                     <Route path="/cases/:id" element={<RequireAdmin><CaseEditPage /></RequireAdmin>} />
+                     <Route path="/case-types" element={<RequireAdmin><CaseTypesPage /></RequireAdmin>} />
+                     <Route path="/case-types/create" element={<RequireAdmin><CaseTypeCreatePage /></RequireAdmin>} />
+                     <Route path="/case-types/:id" element={<RequireAdmin><CaseTypeEditPage /></RequireAdmin>} />
+                     <Route path="/tickets" element={<RequireAdmin><TicketsListPage /></RequireAdmin>} />
+                     <Route path="/tickets/:id" element={<RequireAdmin><TicketAdminPage /></RequireAdmin>} />
+                     <Route path="/ref-levels" element={<RequireAdmin><ReferralLevelsPage /></RequireAdmin>} />
+                     <Route path="/" element={<RequireAdmin><DashboardPage /></RequireAdmin>} />
+                  </Route>
+               </Routes>
+            </Router>
+         </AuthProvider>
+      </div>
+   );
 }
 
 export default App;

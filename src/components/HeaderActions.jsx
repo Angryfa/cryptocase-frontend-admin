@@ -11,6 +11,7 @@ export default function HeaderActions() {
 
    return (
       <nav className={s.wrap}>
+         <Link to="/" className={root.btn}>Статистика</Link>
          <Link to="/users" className={root.btn}>Пользователи</Link>
          <Link to="/cases" className={root.btn}>Кейсы</Link>
          <Link to="/case-types" className={root.btn}>Типы кейсов</Link>
