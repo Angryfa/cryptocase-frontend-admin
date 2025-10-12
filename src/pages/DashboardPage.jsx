@@ -86,6 +86,7 @@ export default function DashboardPage() {
    const topBySpins = data?.top_users?.by_spins || [];
    const newUsersList = data?.new_users_list || [];
    const topByProfit = data?.top_users?.by_user_profit || [];
+   const gameRevenue = data?.game_revenue || {};
 
    return (
       <div className={root.container}>
@@ -234,6 +235,87 @@ export default function DashboardPage() {
                <div className={s.kpiSub}>Всего заявок: ${fmt(k.withdrawals?.sum_all_usd)}</div>
             </div>
          </div>
+
+         {/* Доход с игр */}
+         <div className={s.card} style={{ marginBottom: 16 }}>
+            <div className={s.cardTitle}>Доход с игр (USDT)</div>
+            <div className={s.kpiSub} style={{ marginBottom: 12 }}>
+               Доход = Ставки - Выигрыши (профит платформы)
+            </div>
+            <div className={s.tableWrap}>
+               <table className={s.table}>
+                  <thead>
+                     <tr>
+                        <th>Игра</th>
+                        <th>Доход</th>
+                        <th>Ставки</th>
+                        <th>Выигрыши</th>
+                        <th>Игр</th>
+                     </tr>
+                  </thead>
+                  <tbody>
+                     <tr>
+                        <td><strong>Case</strong></td>
+                        <td style={{ color: (gameRevenue.case?.revenue_usd || 0) >= 0 ? '#4ade80' : '#f87171' }}>
+                           ${fmt(gameRevenue.case?.revenue_usd)}
+                        </td>
+                        <td>${fmt(gameRevenue.case?.bets_sum)}</td>
+                        <td>${fmt(gameRevenue.case?.wins_sum)}</td>
+                        <td>{fmt(gameRevenue.case?.games_count, 0)}</td>
+                     </tr>
+                     <tr>
+                        <td><strong>Double</strong></td>
+                        <td style={{ color: (gameRevenue.double?.revenue_usd || 0) >= 0 ? '#4ade80' : '#f87171' }}>
+                           ${fmt(gameRevenue.double?.revenue_usd)}
+                        </td>
+                        <td>${fmt(gameRevenue.double?.bets_sum)}</td>
+                        <td>${fmt(gameRevenue.double?.wins_sum)}</td>
+                        <td>{fmt(gameRevenue.double?.games_count, 0)}</td>
+                     </tr>
+                     <tr>
+                        <td><strong>Defuse</strong></td>
+                        <td style={{ color: (gameRevenue.defuse?.revenue_usd || 0) >= 0 ? '#4ade80' : '#f87171' }}>
+                           ${fmt(gameRevenue.defuse?.revenue_usd)}
+                        </td>
+                        <td>${fmt(gameRevenue.defuse?.bets_sum)}</td>
+                        <td>${fmt(gameRevenue.defuse?.wins_sum)}</td>
+                        <td>{fmt(gameRevenue.defuse?.games_count, 0)}</td>
+                     </tr>
+                     <tr style={{ borderTop: '2px solid #333', fontWeight: 'bold' }}>
+                        <td>ИТОГО</td>
+                        <td style={{
+                           color: ((gameRevenue.case?.revenue_usd || 0) +
+                              (gameRevenue.double?.revenue_usd || 0) +
+                              (gameRevenue.defuse?.revenue_usd || 0)) >= 0 ? '#4ade80' : '#f87171'
+                        }}>
+                           ${fmt(
+                              (gameRevenue.case?.revenue_usd || 0) +
+                              (gameRevenue.double?.revenue_usd || 0) +
+                              (gameRevenue.defuse?.revenue_usd || 0)
+                           )}
+                        </td>
+                        <td>${fmt(
+                           (gameRevenue.case?.bets_sum || 0) +
+                           (gameRevenue.double?.bets_sum || 0) +
+                           (gameRevenue.defuse?.bets_sum || 0)
+                        )}</td>
+                        <td>${fmt(
+                           (gameRevenue.case?.wins_sum || 0) +
+                           (gameRevenue.double?.wins_sum || 0) +
+                           (gameRevenue.defuse?.wins_sum || 0)
+                        )}</td>
+                        <td>{fmt(
+                           (gameRevenue.case?.games_count || 0) +
+                           (gameRevenue.double?.games_count || 0) +
+                           (gameRevenue.defuse?.games_count || 0), 0
+                        )}</td>
+                     </tr>
+                  </tbody>
+               </table>
+            </div>
+         </div>
+
+
 
          {/* Спин-активность по типам */}
          <div className={s.card} style={{ marginBottom: 16 }}>
