@@ -3,6 +3,20 @@ import { useAuth } from "../context/AuthContext";
 import root from "../assets/styles/Root.module.css";
 import s from "../assets/styles/Admin.module.css";
 
+import { Line } from 'react-chartjs-2';
+import {
+   Chart as ChartJS,
+   CategoryScale,
+   LinearScale,
+   PointElement,
+   LineElement,
+   Title,
+   Tooltip,
+   Legend
+} from 'chart.js';
+
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
+
 const PRESETS = [
    { value: "today", label: "Сегодня" },
    { value: "yesterday", label: "Вчера" },
@@ -24,10 +38,12 @@ export default function DashboardPage() {
    const { authFetch } = useAuth();
    const [loading, setLoading] = useState(false);
    const [preset, setPreset] = useState("7d");
+   const [balancePeriod, setBalancePeriod] = useState("7d");
    const [from, setFrom] = useState("");   // ISO `YYYY-MM-DDTHH:mm`
    const [to, setTo] = useState("");
    const [data, setData] = useState(null);
    const [error, setError] = useState("");
+   const [showNewUsersModal, setShowNewUsersModal] = useState(false);
 
    const query = useMemo(() => {
       if (preset === "custom" && (from || to)) {
@@ -68,12 +84,84 @@ export default function DashboardPage() {
 
    const spinsByType = data?.spins_by_type || [];
    const topBySpins = data?.top_users?.by_spins || [];
+   const newUsersList = data?.new_users_list || [];
    const topByProfit = data?.top_users?.by_user_profit || [];
 
    return (
       <div className={root.container}>
          <div className={s.header}>
             <h2 className={s.title}>Дашборд</h2>
+         </div>
+         {/* Общий баланс пользователей - не зависит от периода */}
+         <div className={s.card} style={{ marginBottom: 16 }}>
+            <div className={s.kpiTitle}>Общий баланс пользователей</div>
+            <div className={s.kpiValue}>${fmt(k.total_users_balance_usd)}</div>
+            <div className={s.kpiSub}>сумма балансов всех пользователей</div>
+         </div>
+
+         {/* График истории баланса */}
+         <div className={s.card} style={{ marginBottom: 16 }}>
+            <div className={s.cardTitle}>История общего баланса пользователей</div>
+
+            <div style={{ marginBottom: 16, display: 'flex', gap: 8 }}>
+               <button
+                  className={root.btn}
+                  onClick={() => setBalancePeriod('7d')}
+                  style={{ backgroundColor: balancePeriod === '7d' ? '#4CAF50' : undefined }}
+               >
+                  7 дней
+               </button>
+               <button
+                  className={root.btn}
+                  onClick={() => setBalancePeriod('30d')}
+                  style={{ backgroundColor: balancePeriod === '30d' ? '#4CAF50' : undefined }}
+               >
+                  30 дней
+               </button>
+               <button
+                  className={root.btn}
+                  onClick={() => setBalancePeriod('365d')}
+                  style={{ backgroundColor: balancePeriod === '365d' ? '#4CAF50' : undefined }}
+               >
+                  Год
+               </button>
+            </div>
+
+            <div style={{ height: 300 }}>
+               <Line
+                  data={{
+                     labels: (data?.balance_history?.[balancePeriod] || []).map(item =>
+                        new Date(item.date).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' })
+                     ),
+                     datasets: [{
+                        label: 'Общий баланс, $',
+                        data: (data?.balance_history?.[balancePeriod] || []).map(item => item.balance),
+                        borderColor: '#4CAF50',
+                        backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                     }]
+                  }}
+                  options={{
+                     responsive: true,
+                     maintainAspectRatio: false,
+                     plugins: {
+                        legend: { position: 'top' },
+                        tooltip: {
+                           callbacks: {
+                              label: (context) => `Баланс: $${fmt(context.parsed.y)}`
+                           }
+                        }
+                     },
+                     scales: {
+                        y: {
+                           beginAtZero: true,
+                           ticks: { callback: (value) => `$${fmt(value, 0)}` }
+                        }
+                     }
+                  }}
+               />
+            </div>
          </div>
 
          {/* Фильтры периода */}
@@ -124,12 +212,14 @@ export default function DashboardPage() {
                <div className={s.kpiValue}>{fmt(k.spins_count, 0)}</div>
                <div className={s.kpiSub}>по выбранному периоду</div>
             </div>
-            <div className={s.card}>
+            <div className={s.card} onClick={() => setShowNewUsersModal(true)} style={{ cursor: 'pointer' }}>
                <div className={s.kpiTitle}>Новые пользователи</div>
                <div className={s.kpiValue}>{fmt(k.new_users, 0)}</div>
                <div className={s.kpiSub}>Из них от рефералов: {fmt(k.new_users_from_referrals, 0)}</div>
             </div>
+
          </div>
+
 
          {/* Депозиты / Выводы */}
          <div className={s.grid2} style={{ marginBottom: 16 }}>
@@ -228,6 +318,55 @@ export default function DashboardPage() {
                </div>
             </div>
          </div>
+
+         {/* Модальное окно с новыми пользователями */}
+         {showNewUsersModal && (
+            <div className={s.modal} onClick={() => setShowNewUsersModal(false)}>
+               <div className={s.modalContent} onClick={(e) => e.stopPropagation()}>
+                  <div className={s.modalHeader}>
+                     <h3>Новые пользователи</h3>
+                     <button onClick={() => setShowNewUsersModal(false)}>✕</button>
+                  </div>
+                  <div className={s.tableWrap}>
+                     <table className={s.table}>
+                        <thead>
+                           <tr>
+                              <th>ID</th>
+                              <th>Email</th>
+                              <th>Username</th>
+                              <th>Дата регистрации</th>
+                              <th>Баланс, $</th>
+                              <th>Депозит, $</th>
+                              <th>Реферал</th>
+                           </tr>
+                        </thead>
+                        <tbody>
+                           {newUsersList.length > 0 ? (
+                              newUsersList.map(u => (
+                                 <tr key={u.id}>
+                                    <td>{u.id}</td>
+                                    <td>{u.email}</td>
+                                    <td>{u.username}</td>
+                                    <td>{new Date(u.date_joined).toLocaleString('ru-RU')}</td>
+                                    <td>{fmt(u.profile__balance_usd)}</td>
+                                    <td>{fmt(u.profile__deposit_total_usd)}</td>
+                                    <td>{u.referral__referred_by_id ? 'Да' : 'Нет'}</td>
+                                 </tr>
+                              ))
+                           ) : (
+                              <tr>
+                                 <td colSpan={6} style={{ textAlign: 'center' }}>
+                                    Новых пользователей нет на данный период
+                                 </td>
+                              </tr>
+                           )}
+                        </tbody>
+                     </table>
+                  </div>
+               </div>
+            </div>
+         )}
+
 
       </div>
    );
