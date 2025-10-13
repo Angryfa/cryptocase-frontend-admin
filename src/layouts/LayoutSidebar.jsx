@@ -33,6 +33,10 @@ export default function LayoutSidebar() {
                      <svg className={s.icon} viewBox="0 0 24 24"><path d="M3 7h18v12H3zM8 3h8l2 4H6z" /></svg>
                      Кейсы
                   </NavLink>
+                  <NavLink to="/prizes" className={({ isActive }) => isActive ? `${s.link} ${s.linkActive}` : s.link}>
+                     <svg className={s.icon} viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>
+                     Призы
+                  </NavLink>
                   <NavLink to="/case-types" className={({ isActive }) => isActive ? `${s.link} ${s.linkActive}` : s.link}>
                      <svg className={s.icon} viewBox="0 0 24 24"><path d="M4 4h16v12H5l-1 4z" /></svg>
                      Виды кейсов

@@ -10,6 +10,8 @@ import CaseEditPage from "./pages/CaseEditPage";
 import CaseTypeEditPage from "./pages/CaseTypeEditPage";
 import CaseTypeCreatePage from "./pages/CaseTypeCreatePage";
 import CaseCreatePage from "./pages/CaseCreatePage";
+import PrizesPage from "./pages/PrizesPage";
+import PrizeCreatePage from "./pages/PrizeCreatePage";
 import TicketsListPage from "./pages/TicketsListPage";
 import TicketAdminPage from "./pages/TicketAdminPage";
 import ReferralLevelsPage from "./pages/ReferralLevelsPage";
@@ -34,6 +36,8 @@ function App() {
                      <Route path="/cases" element={<RequireAdmin><CasesPage /></RequireAdmin>} />
                      <Route path="/cases/create" element={<RequireAdmin><CaseCreatePage /></RequireAdmin>} />
                      <Route path="/cases/:id" element={<RequireAdmin><CaseEditPage /></RequireAdmin>} />
+                     <Route path="/prizes" element={<RequireAdmin><PrizesPage /></RequireAdmin>} />
+                     <Route path="/prizes/create" element={<RequireAdmin><PrizeCreatePage /></RequireAdmin>} />
                      <Route path="/case-types" element={<RequireAdmin><CaseTypesPage /></RequireAdmin>} />
                      <Route path="/case-types/create" element={<RequireAdmin><CaseTypeCreatePage /></RequireAdmin>} />
                      <Route path="/case-types/:id" element={<RequireAdmin><CaseTypeEditPage /></RequireAdmin>} />
