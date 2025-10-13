@@ -16,6 +16,9 @@ import ReferralLevelsPage from "./pages/ReferralLevelsPage";
 import LayoutSidebar from "./layouts/LayoutSidebar";
 import root from "./assets/styles/Root.module.css";
 import DashboardPage from "./pages/DashboardPage";
+import ReferralBonusesPage from "./pages/ReferralBonusesPage";
+import DepositsPage from "./pages/DepositsPage";
+import WithdrawalsPage from "./pages/WithdrawalsPage";
 
 function App() {
    return (
@@ -37,6 +40,9 @@ function App() {
                      <Route path="/tickets/:id" element={<RequireAdmin><TicketAdminPage /></RequireAdmin>} />
                      <Route path="/ref-levels" element={<RequireAdmin><ReferralLevelsPage /></RequireAdmin>} />
                      <Route path="/" element={<RequireAdmin><DashboardPage /></RequireAdmin>} />
+                     <Route path="/referral-bonuses" element={<RequireAdmin><ReferralBonusesPage /></RequireAdmin>} />
+                     <Route path="/deposits" element={<RequireAdmin><DepositsPage /></RequireAdmin>} />
+                     <Route path="/withdrawals" element={<RequireAdmin><WithdrawalsPage /></RequireAdmin>} />
                   </Route>
                </Routes>
             </Router>

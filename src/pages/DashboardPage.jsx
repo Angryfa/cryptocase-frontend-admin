@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import root from "../assets/styles/Root.module.css";
 import s from "../assets/styles/Admin.module.css";
@@ -21,7 +22,6 @@ const PRESETS = [
    { value: "today", label: "Сегодня" },
    { value: "yesterday", label: "Вчера" },
    { value: "7d", label: "7 дней" },
-   { value: "30d", label: "30 дней" },
    { value: "this_month", label: "Текущий месяц" },
    { value: "prev_month", label: "Прошлый месяц" },
    { value: "custom", label: "Период..." },
@@ -36,14 +36,17 @@ function fmt(n, digits = 2) {
 
 export default function DashboardPage() {
    const { authFetch } = useAuth();
+   const navigate = useNavigate();
    const [loading, setLoading] = useState(false);
    const [preset, setPreset] = useState("7d");
    const [balancePeriod, setBalancePeriod] = useState("7d");
+   const [revenuePeriod, setRevenuePeriod] = useState("7d");
    const [from, setFrom] = useState("");   // ISO `YYYY-MM-DDTHH:mm`
    const [to, setTo] = useState("");
    const [data, setData] = useState(null);
    const [error, setError] = useState("");
    const [showNewUsersModal, setShowNewUsersModal] = useState(false);
+
 
    const query = useMemo(() => {
       if (preset === "custom" && (from || to)) {
@@ -139,7 +142,7 @@ export default function DashboardPage() {
                         data: (data?.balance_history?.[balancePeriod] || []).map(item => item.balance),
                         borderColor: '#4CAF50',
                         backgroundColor: 'rgba(76, 175, 80, 0.1)',
-                        tension: 0.4,
+                        tension: 0,
                         fill: true
                      }]
                   }}
@@ -162,6 +165,73 @@ export default function DashboardPage() {
                      }
                   }}
                />
+            </div>
+            {/* График истории дохода */}
+            <div className={s.card} style={{ marginBottom: 16 }}>
+               <div className={s.cardTitle}>История дохода платформы</div>
+               <div className={s.kpiSub} style={{ marginBottom: 12 }}>
+                  Доход = Завершенные депозиты - Завершенные выводы
+               </div>
+
+               <div style={{ marginBottom: 16, display: 'flex', gap: 8 }}>
+                  <button
+                     className={root.btn}
+                     onClick={() => setRevenuePeriod('7d')}
+                     style={{ backgroundColor: revenuePeriod === '7d' ? '#4CAF50' : undefined }}
+                  >
+                     7 дней
+                  </button>
+                  <button
+                     className={root.btn}
+                     onClick={() => setRevenuePeriod('30d')}
+                     style={{ backgroundColor: revenuePeriod === '30d' ? '#4CAF50' : undefined }}
+                  >
+                     30 дней
+                  </button>
+                  <button
+                     className={root.btn}
+                     onClick={() => setRevenuePeriod('365d')}
+                     style={{ backgroundColor: revenuePeriod === '365d' ? '#4CAF50' : undefined }}
+                  >
+                     Год
+                  </button>
+               </div>
+
+               <div style={{ height: 300 }}>
+                  <Line
+                     data={{
+                        labels: (data?.revenue_history?.[revenuePeriod] || []).map(item =>
+                           new Date(item.date).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' })
+                        ),
+                        datasets: [{
+                           label: 'Доход, $',
+                           data: (data?.revenue_history?.[revenuePeriod] || []).map(item => item.revenue),
+                           borderColor: '#2196F3',
+                           backgroundColor: 'rgba(33, 150, 243, 0.1)',
+                           tension: 0,
+                           fill: true
+                        }]
+                     }}
+                     options={{
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                           legend: { position: 'top' },
+                           tooltip: {
+                              callbacks: {
+                                 label: (context) => `Доход: $${fmt(context.parsed.y)}`
+                              }
+                           }
+                        },
+                        scales: {
+                           y: {
+                              beginAtZero: true,
+                              ticks: { callback: (value) => `$${fmt(value, 0)}` }
+                           }
+                        }
+                     }}
+                  />
+               </div>
             </div>
          </div>
 
@@ -200,7 +270,7 @@ export default function DashboardPage() {
          </div>
 
          {/* KPI */}
-         <div className={s.grid3} style={{ marginBottom: 16 }}>
+         <div className={s.grid2} style={{ marginBottom: 16, gridTemplateColumns: 'repeat(4, 1fr)' }}>
             <div className={s.card}>
                <div className={s.kpiTitle}>Прибыль</div>
                <div className={s.kpiValue}>${fmt(k.profit_usd)}</div>
@@ -218,18 +288,31 @@ export default function DashboardPage() {
                <div className={s.kpiValue}>{fmt(k.new_users, 0)}</div>
                <div className={s.kpiSub}>Из них от рефералов: {fmt(k.new_users_from_referrals, 0)}</div>
             </div>
+            <div className={s.card} onClick={() => window.location.href = '/referral-bonuses'} style={{ cursor: 'pointer' }}>
+               <div className={s.kpiTitle}>Реф. отчисления (24ч)</div>
+               <div className={s.kpiValue}>${fmt(k.referral_bonuses_24h_usd)}</div>
+               <div className={s.kpiSub}>за последние 24 часа</div>
+            </div>
 
          </div>
 
 
          {/* Депозиты / Выводы */}
          <div className={s.grid2} style={{ marginBottom: 16 }}>
-            <div className={s.card}>
+            <div
+               className={s.card}
+               onClick={() => navigate(`/deposits?preset=${preset}`)}
+               style={{ cursor: 'pointer' }}
+            >
                <div className={s.cardTitle}>Депозиты</div>
                <div className={s.kpiValue}>${fmt(k.deposits?.sum_completed_usd)}</div>
                <div className={s.kpiSub}>Всего заявок: ${fmt(k.deposits?.sum_all_usd)}</div>
             </div>
-            <div className={s.card}>
+            <div
+               className={s.card}
+               onClick={() => navigate(`/withdrawals?preset=${preset}`)}
+               style={{ cursor: 'pointer' }}
+            >
                <div className={s.cardTitle}>Выводы</div>
                <div className={s.kpiValue}>${fmt(k.withdrawals?.sum_completed_usd)}</div>
                <div className={s.kpiSub}>Всего заявок: ${fmt(k.withdrawals?.sum_all_usd)}</div>
@@ -256,7 +339,7 @@ export default function DashboardPage() {
                   <tbody>
                      <tr>
                         <td><strong>Case</strong></td>
-                        <td style={{ color: (gameRevenue.case?.revenue_usd || 0) >= 0 ? '#4ade80' : '#f87171' }}>
+                        <td style={{ color: '#000' }}>
                            ${fmt(gameRevenue.case?.revenue_usd)}
                         </td>
                         <td>${fmt(gameRevenue.case?.bets_sum)}</td>
@@ -265,7 +348,7 @@ export default function DashboardPage() {
                      </tr>
                      <tr>
                         <td><strong>Double</strong></td>
-                        <td style={{ color: (gameRevenue.double?.revenue_usd || 0) >= 0 ? '#4ade80' : '#f87171' }}>
+                        <td style={{ color: '#000' }}>
                            ${fmt(gameRevenue.double?.revenue_usd)}
                         </td>
                         <td>${fmt(gameRevenue.double?.bets_sum)}</td>
@@ -274,7 +357,7 @@ export default function DashboardPage() {
                      </tr>
                      <tr>
                         <td><strong>Defuse</strong></td>
-                        <td style={{ color: (gameRevenue.defuse?.revenue_usd || 0) >= 0 ? '#4ade80' : '#f87171' }}>
+                        <td style={{ color: '#000' }}>
                            ${fmt(gameRevenue.defuse?.revenue_usd)}
                         </td>
                         <td>${fmt(gameRevenue.defuse?.bets_sum)}</td>
@@ -283,11 +366,7 @@ export default function DashboardPage() {
                      </tr>
                      <tr style={{ borderTop: '2px solid #333', fontWeight: 'bold' }}>
                         <td>ИТОГО</td>
-                        <td style={{
-                           color: ((gameRevenue.case?.revenue_usd || 0) +
-                              (gameRevenue.double?.revenue_usd || 0) +
-                              (gameRevenue.defuse?.revenue_usd || 0)) >= 0 ? '#4ade80' : '#f87171'
-                        }}>
+                        <td style={{ color: '#000' }}>
                            ${fmt(
                               (gameRevenue.case?.revenue_usd || 0) +
                               (gameRevenue.double?.revenue_usd || 0) +
