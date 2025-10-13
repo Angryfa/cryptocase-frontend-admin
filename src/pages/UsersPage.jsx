@@ -61,7 +61,7 @@ export default function UsersPage() {
                         <th>Email</th>
                         <th>Username</th>
                         <th>Баланс, $</th>
-                        <th>Депозит, $</th>
+                        <th>Подтвержденные депозиты, $</th>
                         <th>Выиграл, $</th>
                         <th>Проиграл, $</th>
                         <th></th>
@@ -71,10 +71,10 @@ export default function UsersPage() {
                      {filtered.map(u => (
                         <tr key={u.id}>
                            <td>{u.id}</td>
-                           <td>{u.email}</td>
+                           <td><Link to={`/users/${u.id}`} style={{ color: '#007bff', textDecoration: 'none' }}>{u.email}</Link></td>
                            <td>{u.username}</td>
                            <td>{fmt(u.profile?.balance_usd)}</td>
-                           <td>{fmt(u.profile?.deposit_total_usd)}</td>
+                           <td>{fmt(u.approved_deposits_total)}</td>
                            <td>{fmt(u.profile?.won_total_usd)}</td>
                            <td>{fmt(u.profile?.lost_total_usd)}</td>
                            <td><Link className={root.btn} to={`/users/${u.id}`}>Открыть</Link></td>

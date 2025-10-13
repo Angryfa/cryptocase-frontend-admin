@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import root from "../assets/styles/Root.module.css";
 import s from "../assets/styles/Admin.module.css";
@@ -45,7 +45,6 @@ export default function DashboardPage() {
    const [to, setTo] = useState("");
    const [data, setData] = useState(null);
    const [error, setError] = useState("");
-   const [showNewUsersModal, setShowNewUsersModal] = useState(false);
 
 
    const query = useMemo(() => {
@@ -87,7 +86,6 @@ export default function DashboardPage() {
 
    const spinsByType = data?.spins_by_type || [];
    const topBySpins = data?.top_users?.by_spins || [];
-   const newUsersList = data?.new_users_list || [];
    const topByProfit = data?.top_users?.by_user_profit || [];
    const gameRevenue = data?.game_revenue || {};
 
@@ -283,7 +281,7 @@ export default function DashboardPage() {
                <div className={s.kpiValue}>{fmt(k.spins_count, 0)}</div>
                <div className={s.kpiSub}>по выбранному периоду</div>
             </div>
-            <div className={s.card} onClick={() => setShowNewUsersModal(true)} style={{ cursor: 'pointer' }}>
+            <div className={s.card} onClick={() => navigate(`/new-users?${query}`)} style={{ cursor: 'pointer' }}>
                <div className={s.kpiTitle}>Новые пользователи</div>
                <div className={s.kpiValue}>{fmt(k.new_users, 0)}</div>
                <div className={s.kpiSub}>Из них от рефералов: {fmt(k.new_users_from_referrals, 0)}</div>
@@ -480,53 +478,6 @@ export default function DashboardPage() {
             </div>
          </div>
 
-         {/* Модальное окно с новыми пользователями */}
-         {showNewUsersModal && (
-            <div className={s.modal} onClick={() => setShowNewUsersModal(false)}>
-               <div className={s.modalContent} onClick={(e) => e.stopPropagation()}>
-                  <div className={s.modalHeader}>
-                     <h3>Новые пользователи</h3>
-                     <button onClick={() => setShowNewUsersModal(false)}>✕</button>
-                  </div>
-                  <div className={s.tableWrap}>
-                     <table className={s.table}>
-                        <thead>
-                           <tr>
-                              <th>ID</th>
-                              <th>Email</th>
-                              <th>Username</th>
-                              <th>Дата регистрации</th>
-                              <th>Баланс, $</th>
-                              <th>Депозит, $</th>
-                              <th>Реферал</th>
-                           </tr>
-                        </thead>
-                        <tbody>
-                           {newUsersList.length > 0 ? (
-                              newUsersList.map(u => (
-                                 <tr key={u.id}>
-                                    <td>{u.id}</td>
-                                    <td>{u.email}</td>
-                                    <td>{u.username}</td>
-                                    <td>{new Date(u.date_joined).toLocaleString('ru-RU')}</td>
-                                    <td>{fmt(u.profile__balance_usd)}</td>
-                                    <td>{fmt(u.profile__deposit_total_usd)}</td>
-                                    <td>{u.referral__referred_by_id ? 'Да' : 'Нет'}</td>
-                                 </tr>
-                              ))
-                           ) : (
-                              <tr>
-                                 <td colSpan={6} style={{ textAlign: 'center' }}>
-                                    Новых пользователей нет на данный период
-                                 </td>
-                              </tr>
-                           )}
-                        </tbody>
-                     </table>
-                  </div>
-               </div>
-            </div>
-         )}
 
 
       </div>
