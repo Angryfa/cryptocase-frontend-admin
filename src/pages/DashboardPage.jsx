@@ -168,7 +168,7 @@ export default function DashboardPage() {
             <div className={s.card} style={{ marginBottom: 16 }}>
                <div className={s.cardTitle}>История дохода платформы</div>
                <div className={s.kpiSub} style={{ marginBottom: 12 }}>
-                  Доход = Завершенные депозиты - Завершенные выводы
+                  Доход = Проигрыши − Выигрыши − Реферальные бонусы
                </div>
 
                <div style={{ marginBottom: 16, display: 'flex', gap: 8 }}>

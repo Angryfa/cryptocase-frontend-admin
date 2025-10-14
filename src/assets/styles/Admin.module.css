@@ -53,6 +53,23 @@
    padding: 8px 10px;
    background: #fff;
 }
+.searchInput {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: #fff;
+  width: 100%;
+  max-width: 280px;
+  min-width: 200px;
+  font-size: 14px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.searchInput::placeholder { color: #9ca3af; }
+.searchInput:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(100, 172, 255, 0.2);
+}
 .formCompact .field input,
 .formCompact .field select {
    max-width: 380px;
@@ -106,9 +123,9 @@
    color: #9ca3af;
 }
 
-.grid2 {
+.grid1 {
    display: grid;
-   grid-template-columns: 1fr 1fr;
+   grid-template-columns: 1fr;
    gap: 16px;
 }
 .grid3 {

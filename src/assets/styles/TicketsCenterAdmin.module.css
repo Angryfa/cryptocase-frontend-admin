@@ -21,9 +21,11 @@
 .item { padding: 12px; border-bottom: 1px solid var(--line); cursor: pointer; transition: background .15s ease; }
 .item:hover { background: #fafafa; }
 .itemActive { background: #f5faff; }
+.itemUnread { background: #fffef7; }
 .itTitle { margin: 0 0 6px; font-weight: 700; font-size: 14px; color: #0f172a; }
 .itMeta { display: flex; gap: 8px; align-items: center; font-size: 12px; color: #475569; flex-wrap: wrap; }
 .pill { display: inline-flex; align-items: center; gap: 6px; padding: 2px 8px; border-radius: 999px; border: 1px solid #e2e8f0; background: #fff; color: #0f172a; font-size: 11px; }
+.pillBlue { border-color: #bfdbfe; background: #eff6ff; }
 .dotYellow { width: 8px; height: 8px; background: #fbbf24; border-radius: 999px; }
 .dotGreen { width: 8px; height: 8px; background: #22c55e; border-radius: 999px; }
 .dotGray { width: 8px; height: 8px; background: #94a3b8; border-radius: 999px; }

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import s from "../assets/styles/TicketsCenterAdmin.module.css";
 import root from "../assets/styles/Root.module.css";
@@ -17,6 +17,15 @@ export default function TicketsListPage() {
   const [body, setBody] = useState("");
   const [file, setFile] = useState(null);
   const [error, setError] = useState("");
+
+  // ref до контейнера чата для автоскролла вниз
+  const chatRef = useRef(null);
+  const scrollChatToBottom = () => {
+    const el = chatRef.current;
+    if (el) {
+      el.scrollTop = el.scrollHeight;
+    }
+  };
 
   const fmtStatus = (st) => (st === "closed" ? "Закрыт" : "Открыт");
 
@@ -89,6 +98,8 @@ export default function TicketsListPage() {
       setBody("");
       setFile(null);
       await load();
+      // после обновления данных проскроллим вниз
+      setTimeout(scrollChatToBottom, 0);
     } catch (e) {
       setError((e && e.message) || "Ошибка");
     }
@@ -109,12 +120,29 @@ export default function TicketsListPage() {
   const renderItem = (t) => (
     <div
       key={t.id}
-      className={`${s.item} ${active && active.id === t.id ? s.itemActive : ""}`}
-      onClick={() => setActiveId(t.id)}
+      className={`${s.item} ${active && active.id === t.id ? s.itemActive : ""} ${t.unread_for_staff ? s.itemUnread : ""}`}
+      onClick={async () => {
+        setActiveId(t.id);
+        // Оптимистично снимаем метку непрочитанного сразу
+        if (t.unread_for_staff) {
+          setItems((prev) => prev.map((it) => it.id === t.id ? { ...it, unread_for_staff: false, unread_count_for_staff: 0 } : it));
+        }
+        // И параллельно отправляем отметку на бэкенд
+        try { await authFetch(`/api/support/tickets/${t.id}/mark-read/`, { method: "POST" }); } catch {}
+        // проскроллим вниз при открытии тикета
+        setTimeout(scrollChatToBottom, 0);
+      }}
       role="button"
       tabIndex={0}
       onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") setActiveId(t.id);
+        if (e.key === "Enter" || e.key === " ") {
+          setActiveId(t.id);
+          if (t.unread_for_staff) {
+            setItems((prev) => prev.map((it) => it.id === t.id ? { ...it, unread_for_staff: false, unread_count_for_staff: 0 } : it));
+          }
+          (async () => { try { await authFetch(`/api/support/tickets/${t.id}/mark-read/`, { method: "POST" }); } catch {} })();
+          setTimeout(scrollChatToBottom, 0);
+        }
       }}
     >
       <h4 className={s.itTitle}>{t.subject}</h4>
@@ -124,6 +152,12 @@ export default function TicketsListPage() {
           <span className={t.status === "closed" ? s.dotRed : s.dotGreen} />
           {fmtStatus(t.status)}
         </span>
+        {t.unread_for_staff && (
+          <span className={`${s.pill} ${s.pillBlue}`} title="Непрочитанные сообщения">
+            <span className={s.dotYellow} />
+            {t.unread_count_for_staff || 1}
+          </span>
+        )}
         <span title={(t.user && t.user.email) || ""}>
           {(t.user && (t.user.username || t.user.email)) ||
             `user#${t.user ? t.user.id : ""}`}
@@ -210,7 +244,7 @@ export default function TicketsListPage() {
               )}
             </div>
 
-            <div className={s.chat}>
+            <div className={s.chat} ref={chatRef}>
               {error && <div className={s.error}>{error}</div>}
 
               {active.messages &&
@@ -267,6 +301,12 @@ export default function TicketsListPage() {
                   placeholder="Ваш ответ"
                   value={body}
                   onChange={(e) => setBody(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      onReply();
+                    }
+                  }}
                 />
                 <div className={s.actions}>
                   <label className={s.file}>

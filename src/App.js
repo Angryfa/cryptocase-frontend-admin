@@ -22,6 +22,8 @@ import ReferralBonusesPage from "./pages/ReferralBonusesPage";
 import DepositsPage from "./pages/DepositsPage";
 import WithdrawalsPage from "./pages/WithdrawalsPage";
 import NewUsersPage from "./pages/NewUsersPage";
+import PromocodesPage from "./pages/PromocodesPage";
+import PromocodeEditPage from "./pages/PromocodeEditPage";
 
 function App() {
    return (
@@ -49,6 +51,8 @@ function App() {
                      <Route path="/deposits" element={<RequireAdmin><DepositsPage /></RequireAdmin>} />
                      <Route path="/withdrawals" element={<RequireAdmin><WithdrawalsPage /></RequireAdmin>} />
                      <Route path="/new-users" element={<RequireAdmin><NewUsersPage /></RequireAdmin>} />
+                     <Route path="/promocodes" element={<RequireAdmin><PromocodesPage /></RequireAdmin>} />
+                     <Route path="/promocodes/:id" element={<RequireAdmin><PromocodeEditPage /></RequireAdmin>} />
                   </Route>
                </Routes>
             </Router>

@@ -45,6 +45,10 @@ export default function LayoutSidebar() {
                      <svg className={s.icon} viewBox="0 0 24 24"><path d="M12 3l8 4v6c0 4.4-3.6 8-8 8s-8-3.6-8-8V7l8-4z" /></svg>
                      Проценты
                   </NavLink>
+                  <NavLink to="/promocodes" className={({ isActive }) => isActive ? `${s.link} ${s.linkActive}` : s.link}>
+                     <svg className={s.icon} viewBox="0 0 24 24"><path d="M20 6H4c-1.1 0-2 .9-2 2v3h3l2 2 2-2h6l2 2 2-2h3V8c0-1.1-.9-2-2-2zm-9 9l-2 2-2-2H2v3c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2v-3h-5l-2 2-2-2H11z"/></svg>
+                     Промокоды
+                  </NavLink>
                   <NavLink to="/tickets" className={({ isActive }) => isActive ? `${s.link} ${s.linkActive}` : s.link}>
                      <svg className={s.icon} viewBox="0 0 24 24"><path d="M4 4h16v12H5l-1 4z" /></svg>
                      Тикеты
