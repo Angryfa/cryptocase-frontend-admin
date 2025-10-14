@@ -85,7 +85,12 @@ export default function CaseEditPage() {
          setAvailableTo(isoToLocalInput(dataCase.available_to));
          setSpinsTotal(dataCase.spins_total || 0);
          setIsActive(Boolean(dataCase.is_active));
-         setPrizes((dataCase.prizes || []).map(p => ({ title: p.title, amount_usd: p.amount_usd, weight: p.weight })));
+         setPrizes((dataCase.prizes || []).map(p => ({
+            id: p.id,
+            title: p.title,
+            amount_usd: p.amount_usd,
+            weight: p.weight,
+         })));
 
          // выставляем предпросмотр текущего аватара, если он есть
          setAvatarPreview(dataCase.avatar_url || "");
@@ -135,67 +140,97 @@ export default function CaseEditPage() {
    const clearChosenAvatar = () => {
       setAvatarFile(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
-      // показать исходную картинку
-      setAvatarPreview(caseData?.avatar_url || "");
-   };
+      // preview не меняем: останется выбранный objectURL или новый серверный URL
+    };
 
    const addPrize = () => setPrizes(p => [...p, { title: "", amount_usd: 0, weight: 1 }]);
    const setPrize = (idx, v) => setPrizes(p => p.map((x, i) => i === idx ? v : x));
    const removePrize = (idx) => setPrizes(p => p.filter((_, i) => i !== idx));
 
    const onSubmit = async (e) => {
-      e.preventDefault(); setError(""); setOk("");
+      e.preventDefault();
+      setError("");
+      setOk("");
+    
       try {
-         // отправляем ВСЕГДА multipart/form-data (так проще для замены аватара)
-         const toIsoOrNull = (v) => v ? new Date(v).toISOString() : "";
-
-         const fd = new FormData();
-         fd.append("name", String(name));
-         fd.append("price_usd", String(Number(price)));
-         fd.append("is_active", isActive ? "true" : "false");
-         fd.append("type_id", String(typeId));
-         if (availableFrom) fd.append("available_from", toIsoOrNull(availableFrom));
-         if (availableTo) fd.append("available_to", toIsoOrNull(availableTo));
-         fd.append("spins_total", String(Number(spinsTotal || 0)));
-
-         // prizes — JSON-строкой (бэкенд принимает JSONField)
-         fd.append("prizes", JSON.stringify(
-            (prizes || []).map(p => ({
-               title: p.title,
-               amount_usd: Number(p.amount_usd),
-               weight: Number(p.weight || 1),
+        const toIsoOrNull = (v) => (v ? new Date(v).toISOString() : "");
+    
+        const fd = new FormData();
+        fd.append("name", String(name));
+        fd.append("price_usd", String(Number(price)));
+        fd.append("is_active", isActive ? "true" : "false");
+        fd.append("type_id", String(typeId));
+        if (availableFrom) fd.append("available_from", toIsoOrNull(availableFrom));
+        if (availableTo) fd.append("available_to", toIsoOrNull(availableTo));
+        fd.append("spins_total", String(Number(spinsTotal || 0)));
+    
+        fd.append(
+          "prizes",
+          JSON.stringify(
+            (prizes || []).map((p) => ({
+              ...(p.id ? { id: p.id } : {}),
+              title: p.title,
+              amount_usd: Number(p.amount_usd),
+              weight: Number(p.weight || 1),
             }))
-         ));
-
-         // новый файл — только если выбран
-         if (avatarFile) {
-            fd.append("avatar", avatarFile, avatarFile.name);
-         }
-
-         const res = await authFetch(`/api/admin/cases/${id}/`, {
-            method: "PUT",
-            body: fd, // ВАЖНО: не ставить Content-Type вручную
-         });
-         if (!res.ok) {
-            let msg = "Ошибка";
-            try {
-               const err = await res.json();
-               if (err?.detail) msg = err.detail;
-               else if (err && typeof err === "object") {
-                  msg = Object.entries(err).map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(", ") : v}`).join("; ");
-               }
-            } catch { /* ignore */ }
-            throw new Error(msg);
-         }
-         const updated = await res.json().catch(() => null);
-         if (updated?.avatar_url) setAvatarPreview(updated.avatar_url);
-         setOk("Сохранено");
-         // сброс выбранного файла после успешного сохранения
-         clearChosenAvatar();
+          )
+        );
+    
+        if (avatarFile) {
+          fd.append("avatar", avatarFile, avatarFile.name);
+        }
+    
+        const res = await authFetch(`/api/admin/cases/${id}/`, {
+          method: "PUT",
+          body: fd,
+        });
+    
+        if (!res.ok) {
+          let msg = "Ошибка";
+          try {
+            const err = await res.json();
+            if (err?.detail) msg = err.detail;
+            else if (err && typeof err === "object") {
+              msg = Object.entries(err)
+                .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(", ") : v}`)
+                .join("; ");
+            }
+          } catch {}
+          throw new Error(msg);
+        }
+    
+        const updated = await res.json().catch(() => null);
+    
+        // Если бэкенд вернул новый URL — сразу показываем его (с bust-квери),
+        // и только после этого освобождаем objectURL.
+        if (updated?.avatar_url) {
+          const bust =
+            updated.avatar_url +
+            (updated.avatar_url.includes("?") ? "&" : "?") +
+            "v=" +
+            Date.now();
+    
+          setAvatarPreview(bust);
+          setCaseData((prev) =>
+            prev ? { ...prev, avatar_url: bust } : { avatar_url: bust }
+          );
+    
+          // теперь можно безопасно освободить объект-URL
+          if (objectUrlRef.current) {
+            URL.revokeObjectURL(objectUrlRef.current);
+            objectUrlRef.current = null;
+          }
+        }
+    
+        // инпут сбрасываем, но preview НЕ трогаем
+        setAvatarFile(null);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+    
+        setOk("Сохранено");
       } catch (err) {
-         setError(err.message || "Ошибка");
+        setError(err.message || "Ошибка");
       }
-   };
+    };
 
    const onDelete = async () => {
       if (!window.confirm("Удалить кейс? Действие необратимо.")) return;
@@ -239,6 +274,7 @@ export default function CaseEditPage() {
                         <div>
                            {avatarPreview ? (
                               <img
+                                 key={avatarPreview}
                                  src={avatarPreview}
                                  alt="avatar"
                                  width={120}

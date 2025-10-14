@@ -4,131 +4,306 @@ import s from "../assets/styles/TicketsCenterAdmin.module.css";
 import root from "../assets/styles/Root.module.css";
 
 export default function TicketsListPage() {
-   const { authFetch } = useAuth();
-   const [items, setItems] = useState([]);
-   const [loading, setLoading] = useState(true);
-   const [activeId, setActiveId] = useState(null);
-   const active = useMemo(() => items.find(t => t.id === activeId) || items[0], [items, activeId]);
-   const [body, setBody] = useState("");
-   const [file, setFile] = useState(null);
-   const [error, setError] = useState("");
-   const [searchQuery, setSearchQuery] = useState("");
+  const { authFetch } = useAuth();
 
-   const filteredItems = useMemo(() => {
-      if (!searchQuery.trim()) return items;
-      const query = searchQuery.toLowerCase();
-      return items.filter(t => {
-         const subject = (t.subject || "").toLowerCase();
-         const username = (t.user?.username || "").toLowerCase();
-         const email = (t.user?.email || "").toLowerCase();
-         return subject.includes(query) || username.includes(query) || email.includes(query);
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const [closedMode, setClosedMode] = useState(false);
+
+  const [activeId, setActiveId] = useState(null);
+  const [search, setSearch] = useState("");
+
+  const [body, setBody] = useState("");
+  const [file, setFile] = useState(null);
+  const [error, setError] = useState("");
+
+  const fmtStatus = (st) => (st === "closed" ? "Закрыт" : "Открыт");
+
+  const load = async () => {
+    setLoading(true);
+    const res = await authFetch(`/api/support/tickets/`);
+    const data = res.ok ? await res.json() : [];
+    setItems(Array.isArray(data) ? data : []);
+    setLoading(false);
+  };
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    load();
+  }, []);
+
+  // Разделяем на активные/закрытые
+  const openItemsRaw = useMemo(
+    () => items.filter((t) => t.status !== "closed"),
+    [items]
+  );
+  const closedItemsRaw = useMemo(
+    () => items.filter((t) => t.status === "closed"),
+    [items]
+  );
+
+  // Поиск по теме/почте/имени/ID
+  const q = search.trim().toLowerCase();
+  const match = (t) => {
+    if (!q) return true;
+    const fields = [
+      t.subject,
+      t.user && t.user.username,
+      t.user && t.user.email,
+      String(t.id),
+      fmtStatus(t.status),
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+    return fields.includes(q);
+  };
+
+  const openItems = useMemo(() => openItemsRaw.filter(match), [openItemsRaw, q]);
+  const closedItems = useMemo(
+    () => closedItemsRaw.filter(match),
+    [closedItemsRaw, q]
+  );
+
+  const active = useMemo(
+    () => items.find((t) => t.id === activeId) || null,
+    [items, activeId]
+  );
+
+  const onReply = async () => {
+    if (!active) return;
+    setError("");
+    try {
+      const form = new FormData();
+      form.append("body", body);
+      if (file) form.append("attachment", file);
+
+      const res = await authFetch(`/api/support/tickets/${active.id}/reply/`, {
+        method: "POST",
+        body: form,
+        headers: {},
       });
-   }, [items, searchQuery]);
+      if (!res.ok) throw new Error("Не удалось отправить");
 
-   const load = async () => {
-      setLoading(true);
-      const res = await authFetch(`/api/support/tickets/`);
-      const data = res.ok ? await res.json() : [];
-      setItems(data);
-      setLoading(false);
-   };
-
-   useEffect(() => { load(); /* eslint-disable-next-line */ }, []);
-
-   const fmtStatus = (s) => (s === 'closed' ? 'Закрыт' : 'Открыт');
-
-   const onReply = async () => {
-      if (!active) return;
-      setError("");
-      try {
-         const form = new FormData();
-         form.append("body", body);
-         if (file) form.append("attachment", file);
-         const res = await authFetch(`/api/support/tickets/${active.id}/reply/`, { method: "POST", body: form, headers: {} });
-         if (!res.ok) throw new Error("Не удалось отправить");
-         setBody(""); setFile(null);
-         await load();
-      } catch (e) { setError(e.message || "Ошибка"); }
-   };
-
-   const onClose = async () => {
-      if (!active) return;
-      await authFetch(`/api/support/tickets/${active.id}/close/`, { method: "POST" });
+      setBody("");
+      setFile(null);
       await load();
-   };
+    } catch (e) {
+      setError((e && e.message) || "Ошибка");
+    }
+  };
 
-   return (
-      <div className={s.wrap}>
-         <div className={s.top}>
-            <h2 className={s.title}>Центр тикетов (админ)</h2>
-         </div>
+  const onClose = async () => {
+    if (!active) return;
+    await authFetch(`/api/support/tickets/${active.id}/close/`, {
+      method: "POST",
+    });
+    await load();
 
-         <div className={s.grid}>
-            <div className={s.left}>
-               <div className={s.search}>
-                  <input
-                     placeholder="Поиск по теме или пользователю"
-                     value={searchQuery}
-                     onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-               </div>
-               <div className={s.list}>
-                  {loading ? <div style={{ padding: 12 }}>Загрузка…</div> : (
-                     filteredItems.length === 0 ? <div className={s.emptyList}>Тикетов нет</div> : filteredItems.map(t => (
-                        <div key={t.id} className={`${s.item} ${active?.id === t.id ? s.itemActive : ''}`} onClick={() => setActiveId(t.id)}>
-                           <h4 className={s.itTitle}>{t.subject}</h4>
-                           <div className={s.itMeta}>
-                              <span>{new Date(t.created_at).toLocaleString("ru-RU")}</span>
-                              <span className={s.pill}>
-                                 <span className={t.status === 'closed' ? s.dotRed : s.dotGreen}></span>
-                                 {fmtStatus(t.status)}
-                              </span>
-                              <span title={t.user?.email || ''}>{t.user?.username || t.user?.email || `user#${t.user?.id}`}</span>
-                           </div>
-                        </div>
-                     ))
-                  )}
-               </div>
-            </div>
+    // После закрытия — мягко переключаемся на следующий открытый
+    const next = openItemsRaw.find((t) => t.id !== active.id);
+    setActiveId(next ? next.id : null);
+  };
 
-            <div className={s.right}>
-               <div className={s.head}>
-                  <h3 className={s.subject}>Тема: {active?.subject || ""}</h3>
-                  {active && active.status !== 'closed' && (
-                     <button className={s.closeBtn} onClick={onClose}>Закрыть</button>
-                  )}
-               </div>
-               <div className={s.chat}>
-                  {!active && <div>Выберите тикет слева…</div>}
-                  {active?.messages?.map(m => (
-                     <div key={m.id} className={`${s.bubbleRow} ${(active?.user && m?.author && m.author.id === active.user.id) ? s.mineRow : ''}`}>
-                        <div className={`${s.msg} ${(active?.user && m?.author && m.author.id === active.user.id) ? s.mine : ''}`}>
-                           <div className={s.name}>{(active?.user && m?.author && m.author.id === active.user.id) ? (m.author?.username || m.author?.email || 'Пользователь') : 'Техподдержка'}</div>
-                           <div className={s.meta}>{new Date(m.created_at).toLocaleString("ru-RU")}</div>
-                           <div>{m.body}</div>
-                           {m.attachment && <div><a href={m.attachment} target="_blank" rel="noreferrer">Вложение</a></div>}
-                           {m.read_by_user_at && (
-                              <div className={s.receipt} title={`Прочитано пользователем: ${new Date(m.read_by_user_at).toLocaleString('ru-RU')}`}>
-                                 ✓ Прочитано пользователем
-                              </div>
-                           )}
-                        </div>
-                     </div>
-                  ))}
-               </div>
-               {active && active.status !== 'closed' && (
-                  <div className={s.composer}>
-                     <textarea placeholder="Ваш ответ" value={body} onChange={e => setBody(e.target.value)} />
-                     <div className={s.actions}>
-                        <label className={s.file}><input type="file" accept="application/pdf,image/jpeg,image/png" onChange={e => setFile(e.target.files?.[0] || null)} /><span className={s.fileBtn}>Файл</span></label>
-                        <button className={root.btnPrimary} onClick={(e) => { e.preventDefault(); onReply(); }}>Отправить</button>
-                     </div>
-                  </div>
-               )}
-            </div>
-         </div>
+  const renderItem = (t) => (
+    <div
+      key={t.id}
+      className={`${s.item} ${active && active.id === t.id ? s.itemActive : ""}`}
+      onClick={() => setActiveId(t.id)}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") setActiveId(t.id);
+      }}
+    >
+      <h4 className={s.itTitle}>{t.subject}</h4>
+      <div className={s.itMeta}>
+        <span>{new Date(t.created_at).toLocaleString("ru-RU")}</span>
+        <span className={s.pill}>
+          <span className={t.status === "closed" ? s.dotRed : s.dotGreen} />
+          {fmtStatus(t.status)}
+        </span>
+        <span title={(t.user && t.user.email) || ""}>
+          {(t.user && (t.user.username || t.user.email)) ||
+            `user#${t.user ? t.user.id : ""}`}
+        </span>
       </div>
-   );
+    </div>
+  );
+
+  return (
+    <div className={s.wrap}>
+      <div className={s.top}>
+        <h2 className={s.title}>Центр тикетов (админ)</h2>
+      </div>
+
+      <div className={s.grid}>
+        {/* Левая колонка */}
+        <div className={`${s.left} ${closedMode ? s.leftClosedMode : ""}`}>
+          <div className={s.search}>
+            <input
+              placeholder="Поиск"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+
+          {/* Активные */}
+          <div className={`${s.section} ${s.sectionOpen}`}>
+            <div className={s.sectionHead}>
+              <button
+                className={s.sectionHeadBtn}
+                onClick={() => setClosedMode(false)}
+                aria-pressed={!closedMode}
+              >
+                <span className={s.sectionTitle}>Активные</span>
+                <span className={s.sectionCount}>{openItemsRaw.length}</span>
+              </button>
+            </div>
+            <div className={s.list}>
+              {loading ? (
+                <div style={{ padding: 12 }}>Загрузка…</div>
+              ) : openItems.length === 0 ? (
+                <div className={s.emptyList}>Активных тикетов нет</div>
+              ) : (
+                openItems.map(renderItem)
+              )}
+            </div>
+          </div>
+
+          {/* Закрытые */}
+          <div className={`${s.section} ${s.sectionClosed}`}>
+            <div className={s.sectionHead}>
+              <button
+                className={s.sectionHeadBtn}
+                onClick={() => setClosedMode((v) => !v)}
+                aria-pressed={closedMode}
+              >
+                <span className={s.sectionTitle}>Закрытые тикеты</span>
+                <span className={s.sectionCount}>{closedItemsRaw.length}</span>
+                <span className={`${s.caret} ${closedMode ? s.caretUp : ""}`} />
+              </button>
+            </div>
+
+            <div className={`${s.list} ${closedMode ? "" : s.listCollapsed}`}>
+              {loading ? (
+                <div style={{ padding: 12 }}>Загрузка…</div>
+              ) : closedItems.length === 0 ? (
+                <div className={s.emptyList}>Закрытых тикетов нет</div>
+              ) : (
+                closedItems.map(renderItem)
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Правая колонка */}
+        {active ? (
+          <div className={s.right}>
+            <div className={s.head}>
+              <h3 className={s.subject}>Тема: {active.subject}</h3>
+              {active.status !== "closed" && (
+                <button className={s.closeBtn} onClick={onClose}>
+                  Закрыть
+                </button>
+              )}
+            </div>
+
+            <div className={s.chat}>
+              {error && <div className={s.error}>{error}</div>}
+
+              {active.messages &&
+                active.messages.map((m) => {
+                  const isUser =
+                    active.user && m && m.author && m.author.id === active.user.id;
+                  return (
+                    <div
+                      key={m.id}
+                      className={`${s.bubbleRow} ${isUser ? s.mineRow : ""}`}
+                    >
+                      <div className={`${s.msg} ${isUser ? s.mine : ""}`}>
+                        <div className={s.name}>
+                          {isUser
+                            ? m.author.username ||
+                              m.author.email ||
+                              "Пользователь"
+                            : "Техподдержка"}
+                        </div>
+                        <div className={s.meta}>
+                          {new Date(m.created_at).toLocaleString("ru-RU")}
+                        </div>
+                        <div>{m.body}</div>
+                        {m.attachment && (
+                          <div>
+                            <a
+                              href={m.attachment}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              Вложение
+                            </a>
+                          </div>
+                        )}
+                        {m.read_by_user_at && (
+                          <div
+                            className={s.receipt}
+                            title={`Прочитано пользователем: ${new Date(
+                              m.read_by_user_at
+                            ).toLocaleString("ru-RU")}`}
+                          >
+                            ✓ Прочитано пользователем
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+
+            {active.status !== "closed" && (
+              <div className={s.composer}>
+                <textarea
+                  placeholder="Ваш ответ"
+                  value={body}
+                  onChange={(e) => setBody(e.target.value)}
+                />
+                <div className={s.actions}>
+                  <label className={s.file}>
+                    <input
+                      type="file"
+                      accept="application/pdf,image/jpeg,image/png"
+                      onChange={(e) => {
+                        const fl =
+                          e.target && e.target.files && e.target.files[0]
+                            ? e.target.files[0]
+                            : null;
+                        setFile(fl);
+                      }}
+                    />
+                    <span className={s.fileBtn}>Файл</span>
+                  </label>
+                  <button
+                    className={root.btnPrimary}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      onReply();
+                    }}
+                  >
+                    Отправить
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className={s.rightEmpty}>
+            <div className={s.placeholderBox}>
+              <span>Выберите тикет слева</span>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
-
-
