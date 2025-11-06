@@ -191,3 +191,25 @@
    font-size: 24px;
    cursor: pointer;
 }
+
+/* Compact toolbar for small filters/controls */
+.toolbar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.selectCompact,
+.inputCompact {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: #fff;
+  max-width: 220px;
+}
+
+.group {
+  display: grid;
+  gap: 16px;
+}

@@ -126,7 +126,7 @@ export default function PrizeCreatePage() {
                   <div className={s.hint}>Неактивные призы не будут доступны для выбора в кейсах</div>
                </div>
 
-               <div className={s.actions}>
+               <div className={s.actions} style={{ marginTop: 8 }}>
                   <button type="submit" className={root.btnPrimary} disabled={loading}>
                      {loading ? "Создаем..." : "Создать приз"}
                   </button>

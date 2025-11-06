@@ -24,6 +24,12 @@ export default function UserDetailPage() {
       deposit: [],
       account: []
    });
+   const [ticketsOpenCount, setTicketsOpenCount] = useState(0);
+   const [ticketsClosedCount, setTicketsClosedCount] = useState(0);
+   const [userTicketsOpen, setUserTicketsOpen] = useState([]);
+   const [userTicketsClosed, setUserTicketsClosed] = useState([]);
+   const [promoActs, setPromoActs] = useState([]);
+   const [promoLoading, setPromoLoading] = useState(false);
    const [showBlockModal, setShowBlockModal] = useState(false);
    const [editingBlocks, setEditingBlocks] = useState(false);
    const [blockForm, setBlockForm] = useState({
@@ -94,6 +100,57 @@ export default function UserDetailPage() {
          }
       };
    }, [authFetch, id, spinsPage]);
+
+  // Загрузка счетчиков тикетов пользователя (по email/username)
+  useEffect(() => {
+     let mounted = true;
+     (async () => {
+        try {
+           const res = await authFetch(`/api/support/tickets/`);
+           const list = res.ok ? await res.json() : [];
+           const email = data?.user?.email?.toLowerCase?.() || "";
+           const username = data?.user?.username?.toLowerCase?.() || "";
+           const mine = Array.isArray(list) ? list.filter(t => {
+              const u = t.user || {};
+              const ue = (u.email || "").toLowerCase();
+              const un = (u.username || "").toLowerCase();
+              return (email && ue === email) || (username && un === username);
+           }) : [];
+           const openArr = mine.filter(t => t.status !== "closed");
+           const closedArr = mine.filter(t => t.status === "closed");
+           if (mounted) {
+             setTicketsOpenCount(openArr.length);
+             setTicketsClosedCount(closedArr.length);
+             setUserTicketsOpen(openArr);
+             setUserTicketsClosed(closedArr);
+           }
+        } catch {}
+     })();
+     return () => { mounted = false; };
+  }, [authFetch, data?.user?.email, data?.user?.username]);
+
+  // Загрузка активаций промокодов пользователя
+  useEffect(() => {
+     const userId = data?.user?.id;
+     if (!userId) return;
+     let mounted = true;
+     (async () => {
+        try {
+           setPromoLoading(true);
+           const res = await authFetch(`/api/admin/promocode-activations/`);
+           const payload = res.ok ? await res.json() : [];
+           const list = Array.isArray(payload) ? payload : (payload?.results || []);
+           const mine = list.filter(a => (a?.user?.id === userId));
+           // по убыванию даты
+           mine.sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+           if (mounted) setPromoActs(mine);
+        } catch {
+        } finally {
+           if (mounted) setPromoLoading(false);
+        }
+     })();
+     return () => { mounted = false; };
+  }, [authFetch, data?.user?.id]);
 
    const handleSave = async () => {
       setSaving(true);
@@ -236,7 +293,8 @@ export default function UserDetailPage() {
    const r = data.referrals || {};
 
    return (
-      <div className={s.page}>
+      <>
+         <div className={s.page}>
          <style>{spinnerStyle}</style>
          <div className={s.header}>
             <h2 className={s.title}>Пользователь #{user.id} — {user.username || user.email}</h2>
@@ -321,8 +379,8 @@ export default function UserDetailPage() {
                   </svg>
                   Назад
                </Link>
-            </div>
          </div>
+      </div>
 
          {/* Основная информация о пользователе */}
          <div className={s.card}>
@@ -922,6 +980,76 @@ export default function UserDetailPage() {
             )}
          </div>
 
+         {/* Тикеты пользователя */}
+         <div className={s.card}>
+         <h3 style={{ marginTop: 0 }}>Тикеты пользователя</h3>
+         <div style={{ display: 'grid', gap: 16 }}>
+            <div>
+               <div className={s.cardTitle} style={{ marginBottom: 8 }}>Открытые ({ticketsOpenCount})</div>
+               <div className={s.tableWrap}>
+                  <table className={s.table}>
+                     <thead>
+                        <tr>
+                           <th>ID</th>
+                           <th>Тема</th>
+                           <th>Создан</th>
+                           <th></th>
+                        </tr>
+                     </thead>
+                     <tbody>
+                        {(userTicketsOpen || []).map(t => (
+                           <tr key={t.id}>
+                              <td>{t.id}</td>
+                              <td>{t.subject}</td>
+                              <td>{new Date(t.created_at).toLocaleString('ru-RU')}</td>
+                              <td>
+                                 <Link className={root.btn} to={`/tickets?q=${encodeURIComponent(user.email || user.username || '')}&open=${t.id}`}>Открыть</Link>
+                              </td>
+                           </tr>
+                        ))}
+                        {(!userTicketsOpen || userTicketsOpen.length === 0) && (
+                           <tr><td colSpan={4} style={{ textAlign: 'center', color: '#888' }}>Нет открытых тикетов</td></tr>
+                        )}
+                     </tbody>
+                  </table>
+               </div>
+            </div>
+
+            <div>
+               <div className={s.cardTitle} style={{ marginBottom: 8 }}>Закрытые ({ticketsClosedCount})</div>
+               <div className={s.tableWrap}>
+                  <table className={s.table}>
+                     <thead>
+                        <tr>
+                           <th>ID</th>
+                           <th>Тема</th>
+                           <th>Создан</th>
+                           <th>Закрыт</th>
+                           <th></th>
+                        </tr>
+                     </thead>
+                     <tbody>
+                        {(userTicketsClosed || []).map(t => (
+                           <tr key={t.id}>
+                              <td>{t.id}</td>
+                              <td>{t.subject}</td>
+                              <td>{new Date(t.created_at).toLocaleString('ru-RU')}</td>
+                              <td>{t.closed_at ? new Date(t.closed_at).toLocaleString('ru-RU') : '—'}</td>
+                              <td>
+                                 <Link className={root.btn} to={`/tickets?q=${encodeURIComponent(user.email || user.username || '')}&open=${t.id}`}>Открыть</Link>
+                              </td>
+                           </tr>
+                        ))}
+                        {(!userTicketsClosed || userTicketsClosed.length === 0) && (
+                           <tr><td colSpan={5} style={{ textAlign: 'center', color: '#888' }}>Нет закрытых тикетов</td></tr>
+                        )}
+                     </tbody>
+                  </table>
+               </div>
+            </div>
+         </div>
+         </div>
+
          {/* Финансы */}
          <div className={s.card}>
             <h3 style={{ marginTop: 0 }}>Финансы</h3>
@@ -933,6 +1061,40 @@ export default function UserDetailPage() {
                <div className={u.finCard}><div className={u.finLabel}>Проиграл, $</div><div className={u.finValue}>{fmt2(profile.lost_total_usd)}</div></div>
             </div>
          </div>
+
+         <div className={s.card}>
+         <h3 style={{ marginTop: 0 }}>Активации промокодов</h3>
+         {promoLoading ? (
+            <div>Загрузка…</div>
+         ) : (
+            <div className={s.tableWrap}>
+               <table className={s.table}>
+                  <thead>
+                     <tr>
+                        <th>ID</th>
+                        <th>Код</th>
+                        <th>Сумма, $</th>
+                        <th>Дата</th>
+                     </tr>
+                  </thead>
+                  <tbody>
+                     {promoActs.length ? promoActs.map(a => (
+                        <tr key={a.id}>
+                           <td>{a.id}</td>
+                           <td>{a.promocode?.code}</td>
+                           <td>{Number(a.amount_usd || 0).toFixed(2)}</td>
+                           <td>{a.created_at ? new Date(a.created_at).toLocaleString('ru-RU') : ''}</td>
+                        </tr>
+                     )) : (
+                        <tr>
+                           <td colSpan={4} style={{ textAlign: 'center', color: '#888' }}>Активации не найдены</td>
+                        </tr>
+                     )}
+                  </tbody>
+               </table>
+            </div>
+         )}
+      </div>
 
          {/* Депозиты */}
          <div className={s.card}>
@@ -1318,5 +1480,7 @@ export default function UserDetailPage() {
             </div>
          )}
       </div>
+      
+      </>
    );
 }

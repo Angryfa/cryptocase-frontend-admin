@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import s from "../assets/styles/TicketsCenterAdmin.module.css";
 import root from "../assets/styles/Root.module.css";
 
 export default function TicketsListPage() {
   const { authFetch } = useAuth();
+  const location = useLocation();
 
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -12,6 +14,7 @@ export default function TicketsListPage() {
   const [closedMode, setClosedMode] = useState(false);
 
   const [activeId, setActiveId] = useState(null);
+  const [desiredActiveId, setDesiredActiveId] = useState(null);
   const [search, setSearch] = useState("");
 
   const [body, setBody] = useState("");
@@ -41,6 +44,22 @@ export default function TicketsListPage() {
   useEffect(() => {
     load();
   }, []);
+
+  // Инициализация поиска и активного тикета из query-string (?q=...&open=ID)
+  useEffect(() => {
+    const params = new URLSearchParams(location.search || "");
+    const q = params.get("q") || "";
+    if (q) setSearch(q);
+    const openId = params.get("open");
+    if (openId) setDesiredActiveId(Number(openId));
+  }, [location.search]);
+
+  // После загрузки списка — попытаться активировать нужный тикет
+  useEffect(() => {
+    if (!desiredActiveId || !items.length) return;
+    const found = items.find(t => t.id === desiredActiveId);
+    if (found) setActiveId(found.id);
+  }, [desiredActiveId, items]);
 
   // Разделяем на активные/закрытые
   const openItemsRaw = useMemo(
