@@ -56,6 +56,11 @@ export default function CaseEditPage() {
    const [spinsTotal, setSpinsTotal] = useState(0);
    const [isActive, setIsActive] = useState(true);
    const [prizes, setPrizes] = useState([]);
+   // Бонусная система
+   const [bonusChance, setBonusChance] = useState(0);
+   const [bonusTypeChanceMultiplier, setBonusTypeChanceMultiplier] = useState(0.5);
+   const [bonusMultipliers, setBonusMultipliers] = useState([]);
+   const [maxBonusOpens, setMaxBonusOpens] = useState(1);
 
    // avatar state
    const [avatarFile, setAvatarFile] = useState(null);
@@ -91,6 +96,12 @@ export default function CaseEditPage() {
             amount_usd: p.amount_usd,
             weight: p.weight,
          })));
+         
+         // Бонусная система
+         setBonusChance(dataCase.bonus_chance || 0);
+         setBonusTypeChanceMultiplier(dataCase.bonus_type_chance_multiplier || 0.5);
+         setBonusMultipliers(Array.isArray(dataCase.bonus_multipliers) ? dataCase.bonus_multipliers : []);
+         setMaxBonusOpens(dataCase.max_bonus_opens || 1);
 
          // выставляем предпросмотр текущего аватара, если он есть
          setAvatarPreview(dataCase.avatar_url || "");
@@ -163,6 +174,19 @@ export default function CaseEditPage() {
         if (availableFrom) fd.append("available_from", toIsoOrNull(availableFrom));
         if (availableTo) fd.append("available_to", toIsoOrNull(availableTo));
         fd.append("spins_total", String(Number(spinsTotal || 0)));
+        
+        // Бонусная система
+        // Важно: не используем || 0, так как 0 - это валидное значение
+        const bonusChanceValue = bonusChance !== null && bonusChance !== undefined && bonusChance !== "" 
+           ? String(Number(bonusChance)) 
+           : "0";
+        const bonusTypeChanceValue = bonusTypeChanceMultiplier !== null && bonusTypeChanceMultiplier !== undefined && bonusTypeChanceMultiplier !== "" 
+           ? String(Number(bonusTypeChanceMultiplier)) 
+           : "0.5";
+        fd.append("bonus_chance", bonusChanceValue);
+        fd.append("bonus_type_chance_multiplier", bonusTypeChanceValue);
+        fd.append("bonus_multipliers", JSON.stringify(bonusMultipliers || []));
+        fd.append("max_bonus_opens", String(Number(maxBonusOpens) || 1));
     
         fd.append(
           "prizes",
@@ -266,7 +290,103 @@ export default function CaseEditPage() {
                   <div className={s.field}><label>Открыт до</label><input type="datetime-local" value={availableTo} onChange={e => setAvailableTo(e.target.value)} /></div>
                   <div className={s.field}><label>Лимит круток</label><input type="number" value={spinsTotal} onChange={e => setSpinsTotal(e.target.value)} /></div>
                   <div className={s.field}><label>Активен</label><input type="checkbox" checked={isActive} onChange={e => setIsActive(e.target.checked)} /></div>
+               </div>
 
+               {/* Бонусная система */}
+               <div className={s.section} style={{ marginTop: 24 }}>
+                  <h3>Бонусная система</h3>
+                  <div className={s.formRow} style={{ gridTemplateColumns: "1fr 1fr", display: "grid", gap: 12 }}>
+                     <div className={s.field}>
+                        <label>Шанс бонуса (0-1)</label>
+                        <input 
+                           type="number" 
+                           step="0.0001" 
+                           min="0" 
+                           max="1"
+                           value={bonusChance} 
+                           onChange={e => setBonusChance(e.target.value)} 
+                        />
+                        <div className={s.hint}>Вероятность выпадения бонуса после открытия кейса</div>
+                     </div>
+
+                     <div className={s.field}>
+                        <label>Шанс множителя vs доп. открытия (0-1)</label>
+                        <input 
+                           type="number" 
+                           step="0.0001" 
+                           min="0" 
+                           max="1"
+                           value={bonusTypeChanceMultiplier} 
+                           onChange={e => setBonusTypeChanceMultiplier(e.target.value)} 
+                        />
+                        <div className={s.hint}>Если бонус выпал, вероятность что это будет множитель</div>
+                     </div>
+
+                     <div className={s.field}>
+                        <label>Максимум доп. открытий</label>
+                        <input 
+                           type="number" 
+                           min="1"
+                           value={maxBonusOpens} 
+                           onChange={e => setMaxBonusOpens(e.target.value)} 
+                        />
+                     </div>
+                  </div>
+
+                  <div className={s.field}>
+                     <label>Множители бонуса</label>
+                     {bonusMultipliers.map((m, idx) => (
+                        <div key={idx} className={s.formRow}>
+                           <div className={s.field}>
+                              <label>Множитель (x2, x3...)</label>
+                              <input 
+                                 type="number" 
+                                 min="2"
+                                 value={m.multiplier} 
+                                 onChange={e => {
+                                    const newMults = [...bonusMultipliers];
+                                    newMults[idx] = { ...m, multiplier: Number(e.target.value) };
+                                    setBonusMultipliers(newMults);
+                                 }} 
+                              />
+                           </div>
+                           <div className={s.field}>
+                              <label>Вес</label>
+                              <input 
+                                 type="number" 
+                                 min="1"
+                                 value={m.weight} 
+                                 onChange={e => {
+                                    const newMults = [...bonusMultipliers];
+                                    newMults[idx] = { ...m, weight: Number(e.target.value) };
+                                    setBonusMultipliers(newMults);
+                                 }} 
+                              />
+                           </div>
+                           <div className={s.field}>
+                              <label>&nbsp;</label>
+                              <button 
+                                 type="button" 
+                                 className={root.btn} 
+                                 onClick={() => setBonusMultipliers(bonusMultipliers.filter((_, i) => i !== idx))}
+                              >
+                                 Удалить
+                              </button>
+                           </div>
+                        </div>
+                     ))}
+                     <button 
+                        type="button" 
+                        className={root.btn} 
+                        onClick={() => setBonusMultipliers([...bonusMultipliers, { multiplier: 2, weight: 10 }])}
+                     >
+                        Добавить множитель
+                     </button>
+                     <div className={s.hint}>Список доступных множителей с весами (для выбора по вероятности)</div>
+                  </div>
+               </div>
+
+               <div className={s.formRow} style={{ gridTemplateColumns: "1fr 1fr", display: "grid", gap: 12 }}>
                   {/* Аватар кейса */}
                   <div className={s.field} style={{ gridColumn: "1 / span 2" }}>
                      <label>Аватар кейса</label>

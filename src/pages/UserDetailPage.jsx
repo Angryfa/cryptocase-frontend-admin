@@ -4,6 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import s from "../assets/styles/Admin.module.css";
 import root from "../assets/styles/Root.module.css";
 import u from "../assets/styles/UserDetail.module.css";
+import SpinDetailsModal from "../components/SpinDetailsModal";
 
 export default function UserDetailPage() {
    const { id } = useParams();
@@ -36,6 +37,7 @@ export default function UserDetailPage() {
       block_type: '',
       reason: ''
    });
+   const [spinDetailsModal, setSpinDetailsModal] = useState({ open: false, spinId: null });
 
    const fmt2 = (v) => Number(v ?? 0).toFixed(2);
 
@@ -1249,7 +1251,7 @@ export default function UserDetailPage() {
             <div className={s.tableWrap}>
                <table className={s.table}>
                   <thead>
-                     <tr><th>ID</th><th>Когда</th><th>Кейс</th><th>Приз</th><th>Сумма, $</th></tr>
+                     <tr><th>ID</th><th>Когда</th><th>Кейс</th><th>Приз</th><th>Сумма, $</th><th>Действия</th></tr>
                   </thead>
                   <tbody>
                      {(spinsData?.spins || []).map(sp => (
@@ -1259,6 +1261,15 @@ export default function UserDetailPage() {
                            <td>{sp.case?.name}</td>
                            <td>{sp.prize?.title}</td>
                            <td>{fmt2(sp.prize?.amount_usd)}</td>
+                           <td>
+                              <button
+                                 className={root.btn}
+                                 style={{ fontSize: "0.9em", padding: "4px 12px" }}
+                                 onClick={() => setSpinDetailsModal({ open: true, spinId: sp.id })}
+                              >
+                                 Подробнее
+                              </button>
+                           </td>
                         </tr>
                      ))}
                   </tbody>
@@ -1481,6 +1492,11 @@ export default function UserDetailPage() {
          )}
       </div>
       
+      <SpinDetailsModal
+         open={spinDetailsModal.open}
+         onClose={() => setSpinDetailsModal({ open: false, spinId: null })}
+         spinId={spinDetailsModal.spinId}
+      />
       </>
    );
 }
